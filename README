@@ -1,0 +1,8 @@
+Neural-flow is a simple dataflow library for Common Lisp.
+
+It depends only on `closer-mop' compatibility layer.
+http://common-lisp.net/project/closer/closer-mop.html
+
+The library has been tested under SBCL, Clozure CL and clisp.
+
+Documentation is missing at the moment. Have a look at `examples'.
