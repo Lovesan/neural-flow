@@ -35,7 +35,7 @@
     #:neuron-owner
     #:neuron-handler
     #:neuron-handler-filter
-    #:neuron-dendrites
+    #:neuron-receivers
     #:neuron-function
     #:neuron-value
     #:update-neuron

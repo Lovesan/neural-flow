@@ -27,7 +27,7 @@
 (closer-mop:defclass neuron (closer-mop:funcallable-standard-object)
   ((name :initarg :name :type symbol)
    (owner :initarg :owner)
-   (dendrites :initarg :dendrites :type list)
+   (receivers :initarg :receivers :type list)
    (value :initarg :value)
    (%function :initarg :function :type function)
    (handler :initarg :handler :type function)
@@ -38,7 +38,7 @@
       :function (lambda (value &optional sender)
                   (declare (ignore sender))
                   value)
-      :dendrites '()
+      :receivers '()
       :handler (lambda (neuron condition)
                  (declare (ignore neuron condition))
                  (values))
@@ -91,9 +91,9 @@
     (setf (slot-value neuron 'handler-filter)
           conditions)))
 
-(defun neuron-dendrites (neuron)
+(defun neuron-receivers (neuron)
   (declare (type neuron neuron))
-  (copy-list (slot-value neuron 'dendrites)))
+  (copy-list (slot-value neuron 'receivers)))
 
 (defun neuron-function (neuron)
   (declare (type neuron neuron))  
@@ -121,8 +121,8 @@
 (closer-mop:defgeneric update-neuron (neuron)
   (:method ((neuron neuron))
     (loop :with neuron-value = (neuron-value neuron)
-      :for dendrite :in (slot-value neuron 'dendrites)
-      :do (funcall dendrite neuron-value neuron))))
+      :for receiver :in (slot-value neuron 'receivers)
+      :do (funcall receiver neuron-value neuron))))
 
 (defun (setf neuron-value) (new-value neuron &optional sender)
   (block function
@@ -372,7 +372,7 @@
                        ((or neuron function) destination)
                        ((or symbol cons) (fdefinition destination))
                        (T (slot-neuron destination destination-name)))))
-    (pushnew destination (slot-value source 'dendrites) :test test)
+    (pushnew destination (slot-value source 'receivers) :test test)
     (values source destination)))
 
 (defun remove-connection (source destination &key source-name destination-name (test #'eq))
@@ -387,6 +387,6 @@
                        ((or neuron function) destination)
                        ((or symbol cons) (fdefinition destination))
                        (T (slot-neuron destination destination-name)))))
-    (setf (slot-value source 'dendrites)
-          (delete destination (slot-value source 'dendrites) :test test))
+    (setf (slot-value source 'receivers)
+          (delete destination (slot-value source 'receivers) :test test))
     (values source destination)))

@@ -1,2 +1,5 @@
+v0.1.1
+    * Renamed neuron-dendrites to neuron-receivers
+
 v0.1.0
     * Initial release.
