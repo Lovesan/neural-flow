@@ -23,7 +23,7 @@
 ;;; DEALINGS IN THE SOFTWARE.
 
 (asdf:defsystem #:neural-flow
-  :version "0.1.1"
+  :version "0.2.0"
   :description "A simple dataflow library for Common Lisp"
   :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
   :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
@@ -33,6 +33,7 @@
   :components ((:module "src"
                         :serial t
                         :components ((:file "package")
-                                     (:file "neural-flow")))))
+                                     (:file "neuron")
+                                     (:file "dataflow-class")))))
 
 ;; vim: ft=lisp et

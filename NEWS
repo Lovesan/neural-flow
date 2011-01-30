@@ -1,3 +1,8 @@
+v0.2.0
+    * Completely redesigned dataflow model. Dependencies are now calculated
+        dynamically(no more add-connection and so on), much like in `cells'
+    * Have a look at `examples'
+
 v0.1.1
     * Renamed neuron-dendrites to neuron-receivers
 

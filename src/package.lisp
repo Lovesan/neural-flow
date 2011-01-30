@@ -31,33 +31,27 @@
     
     ;;neuron stuff
     #:neuron
+    #:neuronp
     #:neuron-name
     #:neuron-owner
-    #:neuron-handler
-    #:neuron-handler-filter
-    #:neuron-receivers
-    #:neuron-function
     #:neuron-value
     #:update-neuron
+    #:compute-dependents
+    #:clear-dependents
+    #:abort-flow
+    #:recompute-neuron
+    #:bindf
     
     ;;classes
     #:dataflow-class
     #:neuron-slot-definition
     #:neuron-direct-slot-definition
     #:neuron-effective-slot-definition
-    #:slot-definition-neuron-class
-    #:slot-definition-neuron-name
+    #:neuron-slot-definition-neuron-class
+    #:neuron-slot-definition-neuron-name
     #:dataflow-object
     
     ;;slot readers and accessors
     #:slot-neuron
-    #:slot-function
-    #:slot-handler
-    #:slot-handler-filter
     #:update-slot
-    
-    #:add-connection
-    #:remove-connection
-    #:retry-processing
-    #:abort-processing
     ))

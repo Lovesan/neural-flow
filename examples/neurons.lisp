@@ -20,18 +20,20 @@
 ;;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 ;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;;; DEALINGS IN THE SOFTWARE.
+;;; DEALINGS IN THE SOFTWARE
 
-(asdf:defsystem #:neural-flow-examples
-  :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
-  :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
-  :licence "MIT"
-  :depends-on (#:neural-flow)
-  :serial t
-  :components ((:module "examples"
-                        :serial t
-                        :components ((:file "package")
-                                     (:file "neurons")
-                                     (:file "objects")))))
+(in-package #:nflow-examples)
 
-;; vim: ft=lisp et
+(defun simple-pipeline ()
+  (let* ((input (neuron (neuron old-value :name 'input)
+                  (write-line "Input invoked")
+                  (random 256)))
+         (processor (neuron ()
+                      (write-line "Processor invoked")
+                      (expt (neuron-value input) 2)))
+         (printer (neuron ()
+                    (let ((value (neuron-value processor)))
+                      (format t "Printer invoked: ~a" value)
+                      value))))
+    (declare (ignorable input processor printer))
+    input))

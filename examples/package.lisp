@@ -28,7 +28,7 @@
   (:use #:cl #:neural-flow)
   (:nicknames #:nflow-examples)
   (:export
+    #:simple-pipeline
     #:event-example
-    #:textbox-example
     ))
 

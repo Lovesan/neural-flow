@@ -20,18 +20,28 @@
 ;;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 ;;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ;;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;;; DEALINGS IN THE SOFTWARE.
+;;; DEALINGS IN THE SOFTWARE
 
-(asdf:defsystem #:neural-flow-examples
-  :author "Dmitry Ignatiev <lovesan.ru@gmail.com>"
-  :maintainer "Dmitry Ignatiev <lovesan.ru@gmail.com>"
-  :licence "MIT"
-  :depends-on (#:neural-flow)
-  :serial t
-  :components ((:module "examples"
-                        :serial t
-                        :components ((:file "package")
-                                     (:file "neurons")
-                                     (:file "objects")))))
+(in-package #:nflow-examples)
 
-;; vim: ft=lisp et
+(closer-mop:defclass textbox (dataflow-object)
+  ((text :initform "" :accessor textbox-text))
+  (:metaclass dataflow-class))
+
+(closer-mop:defclass checkbox (dataflow-object)
+  ((checked :initform nil :accessor checkbox-checked))
+  (:metaclass dataflow-class))
+
+(defun event-example ()
+  (let* ((textbox (make-instance 'textbox))
+         (checkbox (make-instance 'checkbox)))
+    (bindf (neuron ()
+             (if (checkbox-checked checkbox)
+               "Checked"
+               "Unchecked"))
+           textbox
+           :slot 'text)
+    (neuron ()
+      (format t "Text changed. New value: ~s"
+              (textbox-text textbox)))
+    checkbox))
