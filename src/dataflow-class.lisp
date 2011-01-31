@@ -35,12 +35,6 @@
   (declare (ignore slot-names initargs))
   (closer-mop:finalize-inheritance class))
 
-(closer-mop:defmethod shared-initialize :around
-  ((class dataflow-class) slot-names &rest initargs)
-  (declare (ignorable slot-names initargs))
-  (let ((*current-class* class))
-    (call-next-method)))
-
 (closer-mop:defclass neuron-slot-definition
     (closer-mop:standard-slot-definition)
   ((neuron-class :initarg :neuron-class :reader neuron-slot-definition-neuron-class)
@@ -161,6 +155,23 @@
   ()
   (:metaclass dataflow-class))
 
+(closer-mop:defmethod shared-initialize :around
+  ((class dataflow-class) slot-names &rest initargs
+   &key direct-superclasses &allow-other-keys)
+  (declare (ignorable slot-names initargs))
+  (remf initargs :direct-superclasses)
+  (let ((*current-class* class))
+    (apply #'call-next-method class slot-names
+           :direct-superclasses (append
+                                  direct-superclasses
+                                  (if (some (lambda (class)
+                                              (subtypep (class-name class)
+                                                        'dataflow-object))
+                                            direct-superclasses)
+                                    '()
+                                    (list (find-class 'dataflow-object))))
+           initargs)))
+
 (defun slot-neuron (dataflow-object neuron-name)
   (declare (type dataflow-object dataflow-object)
            (type symbol neuron-name))
@@ -208,3 +219,5 @@
           (slot-value function '%owner) object)
     (update-neuron function)
     function))
+
+

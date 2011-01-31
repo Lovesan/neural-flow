@@ -1,3 +1,12 @@
+v0.3.0
+    * Neurons' dependents are now stored in a Red-Black tree in the form of
+        weak pointers
+    * Neurons are now able to muffle their signals, i.e. now they can
+        stop the propagation of the flow on their dependents.
+        Have a look at 'muffled-example' function in examples/neurons.lisp
+    * All instances of dataflow-class metaclass and its descendants now
+        have dataflow-object class as default superclass
+
 v0.2.0
     * Completely redesigned dataflow model. Dependencies are now calculated
         dynamically(no more add-connection and so on), much like in `cells'

@@ -29,6 +29,7 @@
   (:nicknames #:nflow-examples)
   (:export
     #:simple-pipeline
-    #:event-example
+    #:muffled-example
+    #:event-example    
     ))
 

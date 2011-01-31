@@ -24,24 +24,25 @@
 
 (in-package #:nflow-examples)
 
-(closer-mop:defclass textbox (dataflow-object)
+(closer-mop:defclass textbox ()
   ((text :initform "" :accessor textbox-text))
   (:metaclass dataflow-class))
 
-(closer-mop:defclass checkbox (dataflow-object)
+(closer-mop:defclass checkbox ()
   ((checked :initform nil :accessor checkbox-checked))
   (:metaclass dataflow-class))
 
 (defun event-example ()
   (let* ((textbox (make-instance 'textbox))
          (checkbox (make-instance 'checkbox)))
-    (bindf (neuron ()
+    (bindf (lambda (old-value)
+             (declare (ignore old-value))
              (if (checkbox-checked checkbox)
                "Checked"
                "Unchecked"))
            textbox
            :slot 'text)
-    (neuron ()
-      (format t "Text changed. New value: ~s"
-              (textbox-text textbox)))
-    checkbox))
+    (let ((observer (neuron (neuron val :name 'observer)
+                      (format t "Text changed. New value: ~s"
+                              (textbox-text textbox)))))
+      (list checkbox textbox observer))))

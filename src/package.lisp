@@ -31,6 +31,7 @@
     
     ;;neuron stuff
     #:neuron
+    #:error-no-neuron
     #:neuronp
     #:neuron-name
     #:neuron-owner
@@ -41,6 +42,9 @@
     #:abort-flow
     #:recompute-neuron
     #:bindf
+    #:muffle-signal
+    #:unmuffle-signal
+    #:signal-muffled-p
     
     ;;classes
     #:dataflow-class

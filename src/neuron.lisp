@@ -26,10 +26,15 @@
 
 (defvar *current-neuron* nil)
 
+(define-condition error-no-neuron (error)
+  ()
+  (:report "Operation can only be completed while neuron is active"))
+
 (closer-mop:defclass neuron (closer-mop:funcallable-standard-object)
   ((%name :initarg :name :type symbol)
    (%owner :initarg :owner)
-   (%dependents :initform '())
+   (%hash :initform (sxhash (random most-positive-fixnum)))
+   (%dependents :initform (tree))
    (%value :initarg :function :initarg :value))
   (:default-initargs
       :name nil      
@@ -57,46 +62,65 @@
 (defun neuron-value (neuron)
   (declare (type neuron neuron))
   (when *current-neuron*
-    (pushnew *current-neuron* (slot-value neuron '%dependents) :test #'eq))
+    (insert-node *current-neuron* (slot-value neuron '%dependents)))
   (slot-value neuron '%value))
 
 (closer-mop:defgeneric compute-dependents (object)
   (:documentation "Computes an ordered list of object's dependents need to be updated")
   (:method ((object neuron))
-    (slot-value object '%dependents)))
+    (flatten-data (slot-value object '%dependents))))
 
 (closer-mop:defgeneric clear-dependents (object)
   (:documentation "Clears all of object's dependents")
   (:method ((object neuron))
-    (setf (slot-value object '%dependents) '())))
-
-(defun %sort-dependents (neuron)
-  (let ((unsorted (cons (list neuron) nil)))
-    (setf (cdr unsorted) (car unsorted))
-    (loop :until (null (car unsorted)) :collect
-      (let ((next (pop (car unsorted))))
-        (loop :for node :in (compute-dependents next)
-          :for cell = (cons node nil)
-          :do (setf (cddr unsorted) cell
-                    (cdr unsorted) cell
-                    (car unsorted) (or (car unsorted) cell)))
-        (clear-dependents next)
-        next))))
+    (setf (tree-root (slot-value object '%dependents)) nil)))
 
 (defun update-neuron (neuron)
   (declare (type neuron neuron))
-  (loop :for *current-neuron* :in (%sort-dependents neuron)
-    :do (tagbody
-          compute-value
-          (restart-case
-            (setf (slot-value *current-neuron* '%value)
-                  (funcall *current-neuron* (slot-value *current-neuron* '%value)))
-            (recompute-neuron (&optional (value (slot-value *current-neuron* '%value)))
-              (setf (slot-value *current-neuron* '%value) value)
-              (go compute-value))
-            (abort-flow (&optional (return-value (slot-value neuron '%value)))
-              (return (setf (slot-value neuron '%value) return-value)))))
-    :finally (return (slot-value *current-neuron* '%value))))
+  (let ((flow-queue (cons (list neuron) nil)))
+    (setf (cdr flow-queue) (car flow-queue))
+    (loop :until (null (car flow-queue)) :for value =
+      (let* ((*current-neuron* (pop (car flow-queue)))
+             (dependents (compute-dependents *current-neuron*))
+             (muffled nil))
+        (restart-bind
+          ((%query-signal (lambda (&optional (muffle nil muffle-p))
+                            (when muffle-p (setf muffled muffle))
+                            muffled)))
+          (tagbody
+            compute-value
+            (restart-case
+              (setf (slot-value *current-neuron* '%value)
+                    (funcall *current-neuron* (slot-value *current-neuron* '%value)))
+              (recompute-neuron (&optional (value (slot-value *current-neuron* '%value)))
+                (setf (slot-value *current-neuron* '%value) value)
+                (go compute-value))
+              (abort-flow (&optional (return-value (slot-value *current-neuron* '%value)))
+                (return (setf (slot-value *current-neuron* '%value) return-value))))))
+        (unless muffled
+          (clear-dependents *current-neuron*)
+          (loop :for node :in dependents
+            :for cell = (cons node nil)
+            :do (setf (cddr flow-queue) cell
+                      (cdr flow-queue) cell
+                      (car flow-queue) (or (car flow-queue) cell))))
+        (slot-value *current-neuron* '%value))
+      :finally (return value))))
+
+(defun muffle-signal ()
+  (if *current-neuron*
+    (invoke-restart '%query-signal t)
+    (error 'error-no-neuron)))
+
+(defun unmuffle-signal ()
+  (if *current-neuron*
+    (invoke-restart '%query-signal nil)
+    (error 'error-no-neuron)))
+
+(defun signal-muffled-p ()
+  (if *current-neuron*
+    (invoke-restart '%query-signal)
+    (error 'error-no-neuron)))
 
 (defun (setf neuron-value) (new-value neuron)
   (declare (type neuron neuron))
