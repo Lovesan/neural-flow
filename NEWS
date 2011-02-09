@@ -1,3 +1,6 @@
+v0.3.1
+    * Several minor optimizations
+
 v0.3.0
     * Neurons' dependents are now stored in a Red-Black tree in the form of
         weak pointers

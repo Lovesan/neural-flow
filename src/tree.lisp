@@ -33,6 +33,7 @@
 (defstruct (weak-pointer (:constructor %make-weak-pointer))
   #-openmcl pointer)
 
+(declaim (inline make-weak-pointer))
 (defun make-weak-pointer (object)
   #+sbcl (sb-ext:make-weak-pointer object)
   #+(or cmu scl) (ext:make-weak-pointer object)
@@ -53,6 +54,7 @@
     (setf (svref array 0) object)
     (%make-weak-pointer :pointer array)))
 
+(declaim (inline weak-pointer-value))
 (defun weak-pointer-value (weak-pointer)
   "If WEAK-POINTER is valid, returns its value. Otherwise, returns NIL."
   #+sbcl (values (sb-ext:weak-pointer-value weak-pointer))
@@ -66,26 +68,26 @@
 
 ;;Red-black tree
 
-(declaim (inline node %nleft %nright %nparent %nred %ndata %ncode
+(declaim (inline %node %nleft %nright %nparent %nred %ndata %ncode
                  (setf %nleft) (setf %nright) (setf %nparent)
                  (setf %nred) (setf %ndata) (setf %ncode)))
-(defstruct (node (:constructor node (data code parent red))
-                 (:conc-name %n))
-  (left nil :type (or null node))
-  (right nil :type (or null node))
-  (parent nil :type (or null node))
+(defstruct (%node (:constructor %node (data code parent red))
+                  (:conc-name %n))
+  (left nil :type (or null %node))
+  (right nil :type (or null %node))
+  (parent nil :type (or null %node))
   (red nil)
   data
   (code 0 :type (integer 0 #.most-positive-fixnum)))
 
-(declaim (inline tree tree-root (setf tree-root)))
-(defstruct (tree (:constructor tree ())
-                 (:copier %copy-tree))
-  (root nil :type (or null node)))
+(declaim (inline %tree %tree-root (setf %tree-root)))
+(defstruct (%tree (:constructor %tree ())
+                  (:copier %copy-tree))
+  (root nil :type (or null %node)))
 
 (declaim (inline rotate-left))
-(defun rotate-left (tree node)
-  (declare (type tree tree) (type node node)
+(defun %rotate-left (tree node)
+  (declare (type %tree tree) (type %node node)
            (optimize (speed 3) (safety 0)))
   (let ((right (%nright node)))
     (when (setf (%nright node) (%nleft right))
@@ -94,14 +96,14 @@
       (if (eq node (%nleft (%nparent node)))
         (setf (%nleft (%nparent node)) right)
         (setf (%nright (%nparent node)) right))
-      (setf (tree-root tree) right))
+      (setf (%tree-root tree) right))
     (setf (%nleft right) node
           (%nparent node) right))
   (values))
 
 (declaim (inline rotate-right))
-(defun rotate-right (tree node)
-  (declare (type tree tree) (type node node)
+(defun %rotate-right (tree node)
+  (declare (type %tree tree) (type %node node)
            (optimize (speed 3) (safety 0)))
   (let ((left (%nleft node)))
     (when (setf (%nleft node) (%nright left))
@@ -110,13 +112,13 @@
       (if (eq node (%nleft (%nparent node)))
         (setf (%nleft (%nparent node)) left)
         (setf (%nright (%nparent node)) left))
-      (setf (tree-root tree) left))
+      (setf (%tree-root tree) left))
     (setf (%nright left) node
           (%nparent node) left))
   (values))
 
-(defun insert-fixup (tree node)
-  (declare (type tree tree) (type node node)
+(defun %insert-fixup (tree node)
+  (declare (type %tree tree) (type %node node)
            (optimize (speed 3) (safety 0)))
   (labels ((grandparent (node)
              (if (and node (%nparent node))
@@ -145,11 +147,11 @@
            (case4 (node &aux (g (grandparent node)))
             (cond ((and (eq node (%nright (%nparent node)))
                         (eq (%nparent node) (%nleft g)))
-                   (rotate-left tree (%nparent node))
+                   (%rotate-left tree (%nparent node))
                    (setf node (%nleft node)))
                   ((and (eq node (%nleft (%nparent node)))
                         (eq (%nparent node) (%nright g)))
-                   (rotate-right tree (%nparent node))
+                   (%rotate-right tree (%nparent node))
                    (setf node (%nright node))))
             (case5 node))
            (case5 (node  &aux (g (grandparent node)))
@@ -157,41 +159,41 @@
                   (%nred g) t)
             (if (and (eq node (%nleft (%nparent node)))
                      (eq (%nparent node) (%nleft g)))
-              (rotate-right tree g)
-              (rotate-left tree g))))
+              (%rotate-right tree g)
+              (%rotate-left tree g))))
     (case1 node))
   (values))
 
-(defun insert-node (object tree)
-  (declare (type tree tree)
+(defun %insert-node (object tree)
+  (declare (type %tree tree)
            (type standard-object object)
            (optimize (speed 3) (safety 0)))
-  (if (null (tree-root tree))
-    (setf (tree-root tree) (node (make-weak-pointer object) (slot-value object '%hash) nil nil))
-    (loop :with node :of-type node = (tree-root tree)
+  (if (null (%tree-root tree))
+    (setf (%tree-root tree) (%node (make-weak-pointer object) (slot-value object '%hash) nil nil))
+    (loop :with node :of-type %node = (%tree-root tree)
       :with code :of-type (integer 0 #.most-positive-fixnum) = (slot-value object '%hash) :do
       (cond        
         ((> code (%ncode node))
          (if (null (%nright node))
            (return
-             (insert-fixup
+             (%insert-fixup
                tree
                (setf (%nright node)
-                     (node (make-weak-pointer object) (slot-value object '%hash) node t))))
+                     (%node (make-weak-pointer object) (slot-value object '%hash) node t))))
            (setf node (%nright node))))
         ((< code (%ncode node))
          (if (null (%nleft node))
            (return
-             (insert-fixup
+             (%insert-fixup
                tree
                (setf (%nleft node)
-                     (node (make-weak-pointer object) (slot-value object '%hash) node t))))
+                     (%node (make-weak-pointer object) (slot-value object '%hash) node t))))
            (setf node (%nleft node))))
         (T (return)))))
   object)
 
-(defun flatten-data (tree)
-  (declare (type tree tree)
+(defun %flatten-data (tree)
+  (declare (type %tree tree)
            (optimize (speed 3) (safety 0)))
   (let ((nodes '()))
     (labels ((iter (node)
@@ -200,5 +202,10 @@
                    (when value (push value nodes)))
                  (iter (%nleft node))
                  (iter (%nright node)))))
-      (iter (tree-root tree)))
+      (iter (%tree-root tree)))
     nodes))
+
+(defun %clear-tree (tree)
+  (declare (type %tree tree))
+  (setf (%tree-root tree) nil))
+
